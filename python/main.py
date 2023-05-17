@@ -5,7 +5,6 @@ import random
 
 random.seed(1)
 
-TYPE_A = 1
 CLASS_IN = 1
 
 @dataclass
@@ -46,6 +45,3 @@ def build_query(domain_name, record_type):
     question = DNSQuestion(name=name, type_=record_type, class_=CLASS_IN)
     return header_to_bytes(header) + question_to_bytes(question)
 
-query = build_query("www.example.com", 1)
-
-print(query)
