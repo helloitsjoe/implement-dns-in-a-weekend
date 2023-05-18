@@ -25,6 +25,15 @@ def parse_question(reader):
     type, class_ = struct.unpack("!HH", data)
     return DNSQuestion(name, type, class_)
 
+def parse_record(reader):
+    name = decode_name_simple(reader)
+    # The type, class, TTL, and data length together are 10 bytes
+    data = reader.read(10)
+    # HHIH means 2 byte int, 2 byte int, 4 byte int, 2 byte int
+    type_, class_, ttl, data_len = struct.unpack("!HHIH", data)
+    data = reader.read(data_len)
+    return DNSRecord(name, type_, class_, ttl, data)
+
 def decode_name_simple(reader):
     parts = []
     while (length := reader.read(1)[0]) != 0:
@@ -45,5 +54,6 @@ response, _ = sock.recvfrom(1024)
 
 reader = BytesIO(response)
 header = parse_header(reader)
-# question = reader.read(19)
-print(parse_question(reader))
+question = parse_question(reader)
+record = parse_record(reader)
+print(record)
