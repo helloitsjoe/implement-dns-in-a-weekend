@@ -19,14 +19,14 @@ def parse_header(reader):
     return DNSHeader(*items)
 
 def parse_question(reader):
-    name = decode_name_simple(reader)
+    name = decode_name(reader)
     print(name)
     data = reader.read(4)
     type, class_ = struct.unpack("!HH", data)
     return DNSQuestion(name, type, class_)
 
 def parse_record(reader):
-    name = decode_name_simple(reader)
+    name = decode_name(reader)
     # The type, class, TTL, and data length together are 10 bytes
     data = reader.read(10)
     # HHIH means 2 byte int, 2 byte int, 4 byte int, 2 byte int
@@ -34,11 +34,30 @@ def parse_record(reader):
     data = reader.read(data_len)
     return DNSRecord(name, type_, class_, ttl, data)
 
-def decode_name_simple(reader):
+# def decode_name_simple(reader):
+#     parts = []
+#     while (length := reader.read(1)[0]) != 0:
+#         parts.append(reader.read(length))
+#     return b".".join(parts)
+
+def decode_name(reader):
     parts = []
     while (length := reader.read(1)[0]) != 0:
-        parts.append(reader.read(length))
+        if length & 0b1100_0000:
+            parts.append(decode_compressed_name(length, reader))
+            break
+        else:
+            parts.append(reader.read(length))
     return b".".join(parts)
+
+def decode_compressed_name(length, reader):
+    pointer_bytes = bytes([length & 0b0011_1111]) + reader.read(1)
+    pointer = struct.unpack("!H", pointer_bytes)[0]
+    current_pos = reader.tell()
+    reader.seek(pointer)
+    result = decode_name(reader)
+    reader.seek(current_pos)
+    return result
 
 query = build_query("www.example.com", TYPE_A)
 
