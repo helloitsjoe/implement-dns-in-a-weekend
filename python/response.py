@@ -1,27 +1,10 @@
-from main import build_query, DNSQuestion, DNSHeader
+from main import build_query, DNSQuestion, DNSHeader, DNSRecord, DNSPacket
 from dataclasses import dataclass
 from io import BytesIO
-from typing import List
 import struct
 import socket
 
 TYPE_A = 1
-
-@dataclass
-class DNSRecord:
-    name: bytes
-    type_: int
-    class_: int
-    ttl: int
-    data: bytes
-
-@dataclass
-class DNSPacket:
-    header: DNSHeader
-    questions: List[DNSQuestion]
-    answers: List[DNSRecord]
-    authorities: List[DNSRecord]
-    additionals: List[DNSRecord]
 
 def parse_header(reader):
     items = struct.unpack("!HHHHHH", reader.read(12))

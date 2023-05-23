@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 import dataclasses
 import struct
 import random
@@ -21,6 +22,22 @@ class DNSQuestion:
     name: bytes
     type_: int
     class_: int
+
+@dataclass
+class DNSRecord:
+    name: bytes
+    type_: int
+    class_: int
+    ttl: int
+    data: bytes
+
+@dataclass
+class DNSPacket:
+    header: DNSHeader
+    questions: List[DNSQuestion]
+    answers: List[DNSRecord]
+    authorities: List[DNSRecord]
+    additionals: List[DNSRecord]
 
 def header_to_bytes(header):
     fields = dataclasses.astuple(header)
