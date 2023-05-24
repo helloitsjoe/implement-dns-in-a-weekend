@@ -3,6 +3,7 @@ from typing import List
 import dataclasses
 import struct
 import random
+import socket
 
 random.seed(1)
 
@@ -58,7 +59,14 @@ def build_query(domain_name, record_type):
     id = random.randint(0, 65535)
     # Recursion Desired bit is the 9th bit from the left in the flags field
     RECURSION_DESIRED = 1 << 8
-    header = DNSHeader(id=id, num_questions=1, flags=RECURSION_DESIRED)
+    header = DNSHeader(id=id, num_questions=1, flags=0)
     question = DNSQuestion(name=name, type_=record_type, class_=CLASS_IN)
     return header_to_bytes(header) + question_to_bytes(question)
 
+def send_query(ip_address, domain_name, record_type):
+    query = build_query(domain_name, record_type)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(query, (ip_address, 53))
+
+    data, _ = sock.recvfrom(1024)
+    return parse_dns_packet(data)
