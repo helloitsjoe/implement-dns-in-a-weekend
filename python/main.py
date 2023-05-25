@@ -63,10 +63,3 @@ def build_query(domain_name, record_type):
     question = DNSQuestion(name=name, type_=record_type, class_=CLASS_IN)
     return header_to_bytes(header) + question_to_bytes(question)
 
-def send_query(ip_address, domain_name, record_type):
-    query = build_query(domain_name, record_type)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(query, (ip_address, 53))
-
-    data, _ = sock.recvfrom(1024)
-    return parse_dns_packet(data)

@@ -79,5 +79,5 @@ def lookup_domain(domain_name, type=TYPE_A):
     response = parse_dns_packet(data)
     return ip_to_string(response.answers[0].data)
 
-print(lookup_domain("google.com"))
-print(lookup_domain("www.runtimerundown.com", 5))
+# print(lookup_domain("google.com"))
+# print(lookup_domain("www.runtimerundown.com", 5))
