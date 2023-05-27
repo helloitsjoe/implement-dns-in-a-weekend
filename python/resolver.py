@@ -10,4 +10,6 @@ def send_query(ip_address, domain_name, record_type):
     data, _ = sock.recvfrom(1024)
     return parse_dns_packet(data)
 
-print(send_query("8.8.8.8", "runtimerundown.com", TYPE_A).answers)
+response = send_query("198.41.0.4", "runtimerundown.com", TYPE_A)
+print(response.answers)
+print(response.authorities)
