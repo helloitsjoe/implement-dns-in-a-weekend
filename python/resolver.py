@@ -1,14 +1,7 @@
 from main import DNSRecord, DNSPacket, DNSQuestion, DNSHeader, header_to_bytes, question_to_bytes, encode_dns_name, build_query
-from response import decode_name, parse_header, parse_question, parse_dns_packet, ip_to_string, TYPE_A, TYPE_NS
+from classes import TYPE_A, TYPE_NS
+from main import send_query
 import socket
-
-def send_query(ip_address, domain_name, record_type):
-    query = build_query(domain_name, record_type)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(query, (ip_address, 53))
-
-    data, _ = sock.recvfrom(1024)
-    return parse_dns_packet(data)
 
 def get_answer(packet):
     for x in packet.answers:

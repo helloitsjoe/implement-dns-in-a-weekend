@@ -1,58 +1,10 @@
-from dataclasses import dataclass
-from typing import List
-import dataclasses
+from classes import DNSHeader, DNSQuestion, DNSRecord, DNSPacket, TYPE_A, CLASS_IN
+from response import parse_dns_packet, header_to_bytes, question_to_bytes, encode_dns_name
 import struct
 import random
 import socket
 
 random.seed(1)
-
-CLASS_IN = 1
-
-@dataclass
-class DNSHeader:
-    id: int
-    flags: int
-    num_questions: int = 0
-    num_answers: int = 0
-    num_authorities: int = 0
-    num_additionals: int = 0
-
-@dataclass
-class DNSQuestion:
-    name: bytes
-    type_: int
-    class_: int
-
-@dataclass
-class DNSRecord:
-    name: bytes
-    type_: int
-    class_: int
-    ttl: int
-    data: bytes
-
-@dataclass
-class DNSPacket:
-    header: DNSHeader
-    questions: List[DNSQuestion]
-    answers: List[DNSRecord]
-    authorities: List[DNSRecord]
-    additionals: List[DNSRecord]
-
-def header_to_bytes(header):
-    fields = dataclasses.astuple(header)
-    # There are 6 Hs because there are 6 fields
-    return struct.pack("!HHHHHH", *fields)
-
-def question_to_bytes(question):
-    return question.name + struct.pack("!HH", question.type_, question.class_)
-
-def encode_dns_name(domain_name):
-    encoded = b""
-    for part in domain_name.encode("ascii").split(b"."):
-        encoded += bytes([len(part)]) + part
-    return encoded + b"\x00"
 
 def build_query(domain_name, record_type):
     name = encode_dns_name(domain_name)
@@ -62,4 +14,27 @@ def build_query(domain_name, record_type):
     header = DNSHeader(id=id, num_questions=1, flags=0)
     question = DNSQuestion(name=name, type_=record_type, class_=CLASS_IN)
     return header_to_bytes(header) + question_to_bytes(question)
+
+def send_query(ip_address, domain_name, record_type):
+    query = build_query(domain_name, record_type)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(query, (ip_address, 53))
+
+    data, _ = sock.recvfrom(1024)
+    return parse_dns_packet(data)
+
+def lookup_domain(domain_name, type=TYPE_A):
+    print(type)
+    query = build_query(domain_name, type)
+    # create a UDP socket
+    # `socket.AF_INET` means that we're connecting to the internet
+    # (as opposed to a Unix domain socket `AF_UNIX` for example)
+    # `socket.SOCK_DGRAM` means "UDP"
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(query, ("8.8.8.8", 53))
+
+    # Get the response
+    data, _ = sock.recvfrom(1024)
+    response = parse_dns_packet(data)
+    return ip_to_string(response.answers[0].data)
 

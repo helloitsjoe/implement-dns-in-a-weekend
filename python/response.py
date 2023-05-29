@@ -1,11 +1,20 @@
-from main import build_query, DNSQuestion, DNSHeader, DNSRecord, DNSPacket
+from classes import DNSQuestion, DNSHeader, DNSRecord, DNSPacket, TYPE_A, TYPE_NS
 from dataclasses import dataclass
+import dataclasses
 from io import BytesIO
 import struct
 import socket
 
-TYPE_A = 1
-TYPE_NS = 2
+def header_to_bytes(header):
+    fields = dataclasses.astuple(header)
+    # There are 6 Hs because there are 6 fields
+    return struct.pack("!HHHHHH", *fields)
+
+def ip_to_string(ip):
+    return ".".join([str(x) for x in ip])
+
+def question_to_bytes(question):
+    return question.name + struct.pack("!HH", question.type_, question.class_)
 
 def parse_header(reader):
     items = struct.unpack("!HHHHHH", reader.read(12))
@@ -43,14 +52,11 @@ def parse_dns_packet(data):
 
     return DNSPacket(header, questions, answers, authorities, additionals)
 
-def ip_to_string(ip):
-    return ".".join([str(x) for x in ip])
-
-# def decode_name_simple(reader):
-#     parts = []
-#     while (length := reader.read(1)[0]) != 0:
-#         parts.append(reader.read(length))
-#     return b".".join(parts)
+def encode_dns_name(domain_name):
+    encoded = b""
+    for part in domain_name.encode("ascii").split(b"."):
+        encoded += bytes([len(part)]) + part
+    return encoded + b"\x00"
 
 def decode_name(reader):
     parts = []
@@ -71,20 +77,3 @@ def decode_compressed_name(length, reader):
     reader.seek(current_pos)
     return result
 
-def lookup_domain(domain_name, type=TYPE_A):
-    print(type)
-    query = build_query(domain_name, type)
-    # create a UDP socket
-    # `socket.AF_INET` means that we're connecting to the internet
-    # (as opposed to a Unix domain socket `AF_UNIX` for example)
-    # `socket.SOCK_DGRAM` means "UDP"
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(query, ("8.8.8.8", 53))
-
-    # Get the response
-    data, _ = sock.recvfrom(1024)
-    response = parse_dns_packet(data)
-    return ip_to_string(response.answers[0].data)
-
-# print(lookup_domain("google.com"))
-# print(lookup_domain("www.runtimerundown.com", 5))
